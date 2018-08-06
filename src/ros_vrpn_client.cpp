@@ -100,6 +100,7 @@ vicon_estimator::ViconOdometryEstimator* vicon_odometry_estimator = NULL;
 
 class Rigid_Body {
  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   // Constructor
   Rigid_Body(ros::NodeHandle& nh, std::string server_ip, int port,
              const std::string& object_name) {

@@ -38,6 +38,7 @@ static const bool kDefaultVerboseFlag = true;
 
 class ViconOdometryEstimator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   // Constructor
   ViconOdometryEstimator(ros::NodeHandle& nh);
 

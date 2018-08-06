@@ -38,6 +38,7 @@
 // Class for collecting data and passing it to the underlying estimator
 class ViconDataListener {
  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   // Constructor
   ViconDataListener(
       ros::NodeHandle nh, ros::NodeHandle nh_private,
