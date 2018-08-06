@@ -51,6 +51,7 @@
 #include <eigen_conversions/eigen_msg.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <tf/transform_broadcaster.h>
 #include <glog/logging.h>
 
@@ -99,18 +100,22 @@ bool display_time_delay = true;
 vicon_estimator::ViconOdometryEstimator* vicon_odometry_estimator = NULL;
 
 class Rigid_Body {
- public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   // Constructor
   Rigid_Body(ros::NodeHandle& nh, std::string server_ip, int port,
              const std::string& object_name) {
     // Advertising published topics.
     measured_target_transform_pub_ =
         nh.advertise<geometry_msgs::TransformStamped>("raw_transform", 1);
+    measured_target_pose_pub_ = 
+        nh.advertise<geometry_msgs::PoseStamped>("raw_pose", 1);
     estimated_target_transform_pub_ =
         nh.advertise<geometry_msgs::TransformStamped>("estimated_transform", 1);
     estimated_target_odometry_pub_ =
         nh.advertise<nav_msgs::Odometry>("estimated_odometry", 1);
+    estimated_target_pose_pub_ = 
+        nh.advertise<geometry_msgs::PoseStamped>("estimated_pose", 1);
     // Connecting to the vprn device and creating an associated tracker.
     std::stringstream connection_name;
     connection_name << server_ip << ":" << port;
@@ -131,6 +136,18 @@ class Rigid_Body {
   // Publishes the raw measured target state to the transform message.
   void publish_measured_transform(TargetState* target_state) {
     measured_target_transform_pub_.publish(target_state->measured_transform);
+    // publish raw pose
+    geometry_msgs::PoseStamped ps;
+    ps.header.stamp = ros::Time::now();
+    ps.header.frame_id = "map";
+    ps.pose.position.x = target_state->measured_transform.transform.translation.x;
+    ps.pose.position.y = target_state->measured_transform.transform.translation.y;
+    ps.pose.position.z = target_state->measured_transform.transform.translation.z;
+    ps.pose.orientation.x = target_state->measured_transform.transform.rotation.x;
+    ps.pose.orientation.y = target_state->measured_transform.transform.rotation.y;
+    ps.pose.orientation.z = target_state->measured_transform.transform.rotation.z;
+    ps.pose.orientation.w = target_state->measured_transform.transform.rotation.w;
+    measured_target_pose_pub_.publish(ps);
   }
 
   // Publishes the estimated target state to the transform message and sends
@@ -138,6 +155,18 @@ class Rigid_Body {
   void publish_estimated_transform(TargetState* target_state) {
     br.sendTransform(target_state->estimated_transform);
     estimated_target_transform_pub_.publish(target_state->estimated_transform);
+    // publish estimated pose
+    geometry_msgs::PoseStamped ps;
+    ps.header.stamp = ros::Time::now();
+    ps.header.frame_id = "map";
+    ps.pose.position.x = target_state->estimated_transform.transform.translation.x;
+    ps.pose.position.y = target_state->estimated_transform.transform.translation.y;
+    ps.pose.position.z = target_state->estimated_transform.transform.translation.z;
+    ps.pose.orientation.x = target_state->estimated_transform.transform.rotation.x;
+    ps.pose.orientation.y = target_state->estimated_transform.transform.rotation.y;
+    ps.pose.orientation.z = target_state->estimated_transform.transform.rotation.z;
+    ps.pose.orientation.w = target_state->estimated_transform.transform.rotation.w;
+    estimated_target_pose_pub_.publish(ps);    
   }
 
   // Publishes the estimated target state to the odometry message.
@@ -154,8 +183,10 @@ class Rigid_Body {
  private:
   // Publishers
   ros::Publisher measured_target_transform_pub_;
+  ros::Publisher measured_target_pose_pub_;
   ros::Publisher estimated_target_transform_pub_;
   ros::Publisher estimated_target_odometry_pub_;
+  ros::Publisher estimated_target_pose_pub_;
   tf::TransformBroadcaster br;
   // Vprn object pointers
   vrpn_Connection* connection;
@@ -414,7 +445,7 @@ int main(int argc, char* argv[]) {
   // Creating object which handles data publishing
   Rigid_Body tool(private_nh, vrpn_server_ip, vrpn_port, object_name);
 
-  ros::Rate loop_rate(1000);  // TODO(gohlp): fix this
+  ros::Rate loop_rate(50);  // TODO(gohlp): fix this, was 1000
 
   while (ros::ok()) {
     tool.step_vrpn();
@@ -423,7 +454,7 @@ int main(int argc, char* argv[]) {
     if (fresh_data == true) {
       tool.publish_measured_transform(target_state);
       tool.publish_estimated_transform(target_state);
-      tool.publish_estimated_odometry(target_state);
+      //tool.publish_estimated_odometry(target_state);
       fresh_data = false;
     }
     loop_rate.sleep();
