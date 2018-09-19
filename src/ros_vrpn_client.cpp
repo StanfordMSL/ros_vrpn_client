@@ -454,7 +454,7 @@ int main(int argc, char* argv[]) {
     if (fresh_data == true) {
       tool.publish_measured_transform(target_state);
       tool.publish_estimated_transform(target_state);
-      //tool.publish_estimated_odometry(target_state);
+      tool.publish_estimated_odometry(target_state);
       fresh_data = false;
     }
     loop_rate.sleep();
